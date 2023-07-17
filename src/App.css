@@ -18,7 +18,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f0d9b5; /* Light color */
+  background-color: #f0d9b5;
+  /* Light color */
 }
 
 .square.dark {
@@ -31,4 +32,23 @@
   height: 16px;
   background-image: url('../public/assets/pieces.png');
   background-repeat: no-repeat;
+  image-rendering: -moz-crisp-edges;
+  /* Firefox */
+  image-rendering: -webkit-optimize-contrast;
+  /* Safari */
+  image-rendering: -o-crisp-edges;
+  /* Opera */
+  image-rendering: pixelated;
+  /* Chrome and other modern browsers */
+  -ms-interpolation-mode: nearest-neighbor;
+  /* IE (non-standard property) */
+}
+
+body {
+  text-align: center;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+h1 {
+  font-size: large;
 }
