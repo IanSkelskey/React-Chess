@@ -1,14 +1,11 @@
 import './App.css';
-import Board from './Board';
+import Game from './Game';
 
 function App() {
   return (
     <div>
-      <h1>React Chess</h1>
-      <Board />
-      <button style={{marginTop: '20px'}}>Start Game</button>
+      <Game />
     </div>
-
   );
 }
 

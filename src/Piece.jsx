@@ -9,7 +9,7 @@ const Piece = ({ type, color }) => {
         'knight': { 'light': '-16px -16px', 'dark': '-16px -48px' },
         'queen': { 'light': '-32px -16px', 'dark': '-32px -48px' },
     };
-    
+
     const spritePosition = spriteMap[type][color];
 
     return (

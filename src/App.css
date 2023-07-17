@@ -28,8 +28,13 @@
 
 /* Square.css */
 .square.selected {
+  background-color: greenyellow;
+}
+
+.square.possible-move {
   background-color: gray;
 }
+
 
 /* Piece.css */
 .piece {
