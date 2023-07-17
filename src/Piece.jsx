@@ -12,8 +12,6 @@ const Piece = ({ type, color }) => {
     
     const spritePosition = spriteMap[type][color];
 
-    console.log(`Displaying ${color} ${type} with sprite position: ${spritePosition}`);
-
     return (
         <div className='piece' style={{ backgroundPosition: spritePosition }}/>
     );

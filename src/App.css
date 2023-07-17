@@ -26,6 +26,11 @@
   background-color: #b58863;
 }
 
+/* Square.css */
+.square.selected {
+  background-color: gray;
+}
+
 /* Piece.css */
 .piece {
   width: 16px;

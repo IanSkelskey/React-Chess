@@ -1,15 +1,9 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import Piece from './Piece';
 
-const Square = ({ piece, dark }) => {
-
-    // Use useEffect to log the piece when it changes
-    useEffect(() => {
-        console.log(piece);
-    }, [piece]);
-
+const Square = ({ piece, dark, selected, onClick }) => {
     return (
-        <div className={`square ${dark ? 'dark' : ''}`}>
+        <div className={`square ${dark ? 'dark' : ''} ${selected ? 'selected' : ''}`} onClick={onClick}>
             {piece && <Piece type={piece.type} color={piece.color} />}
         </div>
     );
