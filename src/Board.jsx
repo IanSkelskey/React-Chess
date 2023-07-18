@@ -31,12 +31,4 @@ const Board = ({ squares, selectedPiece, possibleMoves, onSquareClick }) => {
   );
 };
 
-export const iterateBoard = (callback) => {
-  for (let x = 0; x < 8; x++) {
-      for (let y = 0; y < 8; y++) {
-          callback(x, y);
-      }
-  }
-}
-
 export default Board;

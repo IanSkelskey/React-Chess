@@ -9,12 +9,16 @@ function Game() {
         <div className='game'>
             <h1>React Chess</h1>
             <label>It is {turn}'s turn</label>
-            <Board squares={squares}
-                selectedPiece={selectedPiece}
-                possibleMoves={possibleMoves}
-                onSquareClick={handleSquareClick} />
-            <MoveHistory moves={moves} />
-            <button onClick={resetGame} style={{marginTop: '25px'}}>Reset Board</button>
+            <div className='row'>
+                <Board squares={squares}
+                    selectedPiece={selectedPiece}
+                    possibleMoves={possibleMoves}
+                    onSquareClick={handleSquareClick} />
+                <div style={{ overflowY: 'scroll', maxHeight: '360px', width: '300px'}}>
+                    <MoveHistory moves={moves} />
+                </div>
+            </div>
+            <button onClick={resetGame} style={{ marginTop: '25px', width: '100px'}}>Reset Board</button>
         </div>
     );
 }

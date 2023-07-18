@@ -7,7 +7,7 @@ function MoveHistory({ moves }) {
     return (
         <div className='move-history'>
             <h2>Move History</h2>
-            <ol>
+            <ol style={{textAlign: 'left'}}>
                 {moves.map((move, index) => (
                     <li key={index}>
                         {move.piece.color} {move.piece.type} moved from {toAlgebraicNotation(move.start)} to {toAlgebraicNotation(move.end)}
