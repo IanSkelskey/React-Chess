@@ -4,6 +4,10 @@ function MoveHistory({ moves }) {
         return `${files[j]}${8 - i}`;
     };
 
+    const determineKingSideOrQueenSide = (rook) => {
+        return rook.start.j === 0 ? 'queen' : 'king';
+    };
+
     return (
         <div className='move-history'>
             <h2>Move History</h2>
@@ -11,7 +15,8 @@ function MoveHistory({ moves }) {
                 {moves.map((move, index) => (
                     <li key={index}>
                         {move.piece.color} {move.piece.type} moved from {toAlgebraicNotation(move.start)} to {toAlgebraicNotation(move.end)}
-                        {move.capturedPiece && ` and captured ${move.capturedPiece.color} ${move.capturedPiece.type}`}
+                        {(move.enPassant && ` and captured ${move.capturedPiece.color} pawn en passant`) || move.capturedPiece && ` and captured ${move.capturedPiece.color} ${move.capturedPiece.type}`}                        
+                        {move.rook && ` and castled with the ${determineKingSideOrQueenSide(move.rook)} side rook`}
                     </li>
                 ))}
             </ol>

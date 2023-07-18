@@ -3,7 +3,7 @@ import Board from './Board';
 import MoveHistory from './MoveHistory';
 
 function Game() {
-    const { squares, selectedPiece, possibleMoves, turn, moves, goBackAMove, resetGame, handleSquareClick } = useChessGame();
+    const { squares, selectedPiece, possibleMoves, turn, moves, isGameOver, goBackAMove, resetGame, handleSquareClick } = useChessGame();
 
     return (
         <div className='game'>
@@ -18,6 +18,7 @@ function Game() {
                     <MoveHistory moves={moves} />
                 </div>
             </div>
+            {isGameOver && <h2>Game Over</h2>}
             <div className='row'>
                 <button onClick={goBackAMove} style={{ marginTop: '25px', width: '100px' }}>Go Back</button>
                 <button onClick={resetGame} style={{ marginTop: '25px', width: '100px' }}>Reset Board</button>

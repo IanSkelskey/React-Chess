@@ -1,16 +1,15 @@
 import { useState, useCallback } from 'react';
-
-const piecesOrder = ['rook', 'knight', 'bishop', 'queen', 'king', 'bishop', 'knight', 'rook'];
+import { BOARD_INITIAL_STATE } from './constants';
 
 export function useChessGame() {
     const [moves, setMoves] = useState([]);
-    const [squares, setSquares] = useState(createInitialBoard());
+    const [squares, setSquares] = useState(BOARD_INITIAL_STATE);
     const [selectedPiece, setSelectedPiece] = useState(null);
     const [turn, setTurn] = useState('light');
     const [possibleMoves, setPossibleMoves] = useState([]);
 
     const resetGame = useCallback(() => {
-        setSquares(createInitialBoard());
+        setSquares(BOARD_INITIAL_STATE);
         setSelectedPiece(null);
         setTurn('light');
         setPossibleMoves([]);
@@ -22,37 +21,13 @@ export function useChessGame() {
             if (isValidMove(selectedPiece.piece, { i: selectedPiece.i, j: selectedPiece.j }, { i, j }, squares)) {
                 let capturedPiece = squares[i][j]; // Store the piece that was captured
 
-                // Handle castling
-                if (selectedPiece.piece.type === 'king' && Math.abs(selectedPiece.j - j) === 2) {
-                    const rookPosition = { i, j: j > selectedPiece.j ? j + 1 : j - 2 };
-                    const rookTargetPosition = { i, j: j > selectedPiece.j ? j - 1 : j + 1 };
-
-                    // Move the rook to the target square
-                    squares[rookTargetPosition.i][rookTargetPosition.j] = squares[rookPosition.i][rookPosition.j];
-                    squares[rookPosition.i][rookPosition.j] = null;
-                }
-
                 // Move the piece to the target square
                 squares[selectedPiece.i][selectedPiece.j] = null;
                 squares[i][j] = selectedPiece.piece;
 
                 // Set firstMove to false after the pawn has moved
-                if (selectedPiece.piece.type === 'pawn') {
+                if (selectedPiece.piece.type === 'pawn' || selectedPiece.piece.type === 'rook' || selectedPiece.piece.type === 'king') {
                     squares[i][j].firstMove = false;
-                }
-
-                setSelectedPiece(null);
-                setPossibleMoves([]);
-                setTurn(turn === 'light' ? 'dark' : 'light');
-
-                // Handle en passant
-                if (selectedPiece.piece.type === 'pawn' && selectedPiece.j !== j && !capturedPiece) {
-                    // Determine the position of the captured pawn
-                    const capturedPawnPosition = { i: selectedPiece.i, j };
-
-                    // Remove the captured pawn for en passant
-                    capturedPiece = squares[capturedPawnPosition.i][capturedPawnPosition.j];
-                    squares[capturedPawnPosition.i][capturedPawnPosition.j] = null;
                 }
 
                 // Record the move
@@ -64,11 +39,26 @@ export function useChessGame() {
                     movedTwoSquares: selectedPiece.piece.type === 'pawn' && Math.abs(selectedPiece.i - i) === 2
                 };
 
+                // Handle en passant
+                if (selectedPiece.piece.type === 'pawn' && selectedPiece.j !== j && !capturedPiece) {
+                    // Determine the position of the captured pawn
+                    const capturedPawnPosition = { i: selectedPiece.i, j };
+
+                    // Remove the captured pawn for en passant
+                    move.capturedPiece = squares[capturedPawnPosition.i][capturedPawnPosition.j];
+                    console.log('en passant captured piece:', capturedPiece);
+                    squares[capturedPawnPosition.i][capturedPawnPosition.j] = null;
+                    move.enPassant = capturedPawnPosition;
+                }
+
                 // Handle castling
                 if (selectedPiece.piece.type === 'king' && Math.abs(selectedPiece.j - j) === 2) {
                     const rookPosition = { i, j: j > selectedPiece.j ? j + 1 : j - 2 };
                     const rookTargetPosition = { i, j: j > selectedPiece.j ? j - 1 : j + 1 };
 
+                    // Move the rook to the target square
+                    squares[rookTargetPosition.i][rookTargetPosition.j] = squares[rookPosition.i][rookPosition.j];
+                    squares[rookPosition.i][rookPosition.j] = null;
                     // Record the move
                     move.rook = {
                         piece: squares[rookTargetPosition.i][rookTargetPosition.j],
@@ -76,6 +66,10 @@ export function useChessGame() {
                         end: rookTargetPosition
                     };
                 }
+
+                setSelectedPiece(null);
+                setPossibleMoves([]);
+                toggleTurn();
 
                 setMoves([...moves, move]); // Update the moves state here
 
@@ -91,24 +85,6 @@ export function useChessGame() {
             setPossibleMoves(moves);
         }
     };
-
-    function createInitialBoard() {
-        const initialBoard = Array(8).fill(null).map(() => Array(8).fill(null));
-
-        for (let i = 0; i < 8; i++) {
-            // Set pawns with the 'firstMove' property set to true
-            initialBoard[1][i] = { type: 'pawn', color: 'dark', firstMove: true };
-            initialBoard[6][i] = { type: 'pawn', color: 'light', firstMove: true };
-
-            // Set other pieces
-            ['rook', 'knight', 'bishop', 'queen', 'king', 'bishop', 'knight', 'rook'].forEach((type, i) => {
-                initialBoard[0][i] = { type, color: 'dark', firstMove: type === 'king' || type === 'rook' };
-                initialBoard[7][i] = { type, color: 'light', firstMove: type === 'king' || type === 'rook' };
-            });
-        }
-
-        return initialBoard;
-    }
 
     function iterateBoard(callback) {
         for (let x = 0; x < 8; x++) {
@@ -231,7 +207,6 @@ export function useChessGame() {
         }
     }
 
-
     function isRookMoveValid({ start, end, dx, dy }) {
         if (dx === 0) {
             const direction = dy > 0 ? 1 : -1;
@@ -347,6 +322,17 @@ export function useChessGame() {
         return underAttack;
     }
 
+    const findKing = (color) => {
+        let kingPos = null;
+        iterateBoard((i, j) => {
+            const piece = squares[i][j];
+            if (piece && piece.type === 'king' && piece.color === color) {
+                kingPos = { i, j };
+            }
+        });
+        return kingPos;
+    }
+
     function goBackAMove() {
         if (moves.length === 0) {
             return;
@@ -361,7 +347,7 @@ export function useChessGame() {
         newSquares[end.i][end.j] = null;
 
         // If the piece is a pawn and it was its first move, reset the firstMove property
-        if (piece.type === 'pawn' && piece.firstMove === false) {
+        if ((piece.type === 'pawn' || piece.type === 'king' || piece.type === 'rook') && piece.firstMove === false) {
             piece.firstMove = true;
         }
 
@@ -380,16 +366,22 @@ export function useChessGame() {
             }
         }
 
-        // If a piece was captured, put it back
-        if (lastMove.capturedPiece) {
+        // If the piece is a pawn and the move was en passant, put the captured pawn back
+        if (piece.type === 'pawn' && lastMove.enPassant) {
+            console.log('en passant', lastMove);
+            newSquares[lastMove.enPassant.i][lastMove.enPassant.j] = lastMove.capturedPiece;
+        } else if (lastMove.capturedPiece) {
             newSquares[end.i][end.j] = lastMove.capturedPiece;
         }
 
         setSquares(newSquares);
         setMoves(newMoves);
-        setTurn(turn === 'light' ? 'dark' : 'light');
+        toggleTurn();
     }
 
+    const toggleTurn = () => {
+        setTurn(turn === 'light' ? 'dark' : 'light');
+    }
 
     return {
         squares,
