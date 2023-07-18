@@ -22,6 +22,16 @@ export function useChessGame() {
             if (isValidMove(selectedPiece.piece, { i: selectedPiece.i, j: selectedPiece.j }, { i, j }, squares)) {
                 let capturedPiece = squares[i][j]; // Store the piece that was captured
 
+                // Handle castling
+                if (selectedPiece.piece.type === 'king' && Math.abs(selectedPiece.j - j) === 2) {
+                    const rookPosition = { i, j: j > selectedPiece.j ? j + 1 : j - 2 };
+                    const rookTargetPosition = { i, j: j > selectedPiece.j ? j - 1 : j + 1 };
+
+                    // Move the rook to the target square
+                    squares[rookTargetPosition.i][rookTargetPosition.j] = squares[rookPosition.i][rookPosition.j];
+                    squares[rookPosition.i][rookPosition.j] = null;
+                }
+
                 // Move the piece to the target square
                 squares[selectedPiece.i][selectedPiece.j] = null;
                 squares[i][j] = selectedPiece.piece;
@@ -54,6 +64,19 @@ export function useChessGame() {
                     movedTwoSquares: selectedPiece.piece.type === 'pawn' && Math.abs(selectedPiece.i - i) === 2
                 };
 
+                // Handle castling
+                if (selectedPiece.piece.type === 'king' && Math.abs(selectedPiece.j - j) === 2) {
+                    const rookPosition = { i, j: j > selectedPiece.j ? j + 1 : j - 2 };
+                    const rookTargetPosition = { i, j: j > selectedPiece.j ? j - 1 : j + 1 };
+
+                    // Record the move
+                    move.rook = {
+                        piece: squares[rookTargetPosition.i][rookTargetPosition.j],
+                        start: rookPosition,
+                        end: rookTargetPosition
+                    };
+                }
+
                 setMoves([...moves, move]); // Update the moves state here
 
                 // Update the squares state after updating the moves and removing the captured piece
@@ -69,7 +92,6 @@ export function useChessGame() {
         }
     };
 
-
     function createInitialBoard() {
         const initialBoard = Array(8).fill(null).map(() => Array(8).fill(null));
 
@@ -79,8 +101,10 @@ export function useChessGame() {
             initialBoard[6][i] = { type: 'pawn', color: 'light', firstMove: true };
 
             // Set other pieces
-            initialBoard[0][i] = { type: piecesOrder[i], color: 'dark' };
-            initialBoard[7][i] = { type: piecesOrder[i], color: 'light' };
+            ['rook', 'knight', 'bishop', 'queen', 'king', 'bishop', 'knight', 'rook'].forEach((type, i) => {
+                initialBoard[0][i] = { type, color: 'dark', firstMove: type === 'king' || type === 'rook' };
+                initialBoard[7][i] = { type, color: 'light', firstMove: type === 'king' || type === 'rook' };
+            });
         }
 
         return initialBoard;
@@ -103,12 +127,52 @@ export function useChessGame() {
             }
         });
 
+        if (piece.type === 'king' && piece.firstMove) {
+            // Check for kingside castling
+            if (squares[i][j + 3] && squares[i][j + 3].type === 'rook' && squares[i][j + 3].firstMove) {
+                let canCastle = true;
+                for (let k = 1; k < 3; k++) {
+                    if (squares[i][j + k] || isSquareUnderAttack({ i, j: j + k }, piece.color === 'light' ? 'dark' : 'light')) {
+                        canCastle = false;
+                        break;
+                    }
+                }
+                if (canCastle) {
+                    moves.push({ i, j: j + 2 });
+                }
+            }
+
+            // Check for queenside castling
+            if (squares[i][j - 4] && squares[i][j - 4].type === 'rook' && squares[i][j - 4].firstMove) {
+                let canCastle = true;
+                for (let k = 1; k < 4; k++) {
+                    if (squares[i][j - k] || isSquareUnderAttack({ i, j: j - k }, piece.color === 'light' ? 'dark' : 'light')) {
+                        canCastle = false;
+                        break;
+                    }
+                }
+                if (canCastle) {
+                    moves.push({ i, j: j - 2 });
+                }
+            }
+
+        }
+
         return moves;
     }
 
     function isValidMove(piece, start, end) {
         const dx = end.i - start.i;
         const dy = end.j - start.j;
+
+        // check if this is a castling move
+        if (piece.type === 'king' && piece.firstMove && dx === 0 && Math.abs(dy) === 2) {
+            // it's a valid move only if there's no piece between the king and the rook
+            if ((dy > 0 && !squares[start.i][start.j + 1] && !squares[start.i][start.j + 2]) ||
+                (dy < 0 && !squares[start.i][start.j - 1] && !squares[start.i][start.j - 2] && !squares[start.i][start.j - 3])) {
+                return true;
+            }
+        }
 
         // Check if the piece stays in the same place
         if (dx === 0 && dy === 0) {
@@ -221,9 +285,33 @@ export function useChessGame() {
         return Math.abs(dx) * Math.abs(dy) === 0 || Math.abs(dx) === Math.abs(dy);
     }
 
-    function isKingMoveValid({ piece, end, dx, dy }) {
+    function isKingMoveValid({ piece, start, end, dx, dy }) {
+        const castlingMove = Math.abs(dx) === 2 && dy === 0;
+        if (castlingMove) {
+            if (!piece.firstMove || isSquareUnderAttack(start, piece.color === 'light' ? 'dark' : 'light')) {
+                return false;
+            }
+
+            const direction = dx > 0 ? 1 : -1;
+            const rookPos = dx > 0 ? { i: start.i, j: 7 } : { i: start.i, j: 0 };
+            const rook = squares[rookPos.i][rookPos.j];
+
+            if (!rook || rook.type !== 'rook' || !rook.firstMove) {
+                return false;
+            }
+
+            for (let j = start.j + direction; j !== end.j; j += direction) {
+                if (squares[start.i][j] || isSquareUnderAttack({ i: start.i, j }, piece.color === 'light' ? 'dark' : 'light')) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         return Math.abs(dx) <= 1 && Math.abs(dy) <= 1 && !isSquareUnderAttack(end, piece.color === 'light' ? 'dark' : 'light');
     }
+
 
     function isKnightMoveValid({ dx, dy }) {
         return Math.abs(dx) * Math.abs(dy) === 2;
@@ -259,11 +347,56 @@ export function useChessGame() {
         return underAttack;
     }
 
+    function goBackAMove() {
+        if (moves.length === 0) {
+            return;
+        }
+
+        const newMoves = [...moves];
+        const lastMove = newMoves.pop();
+        const { start, end, piece } = lastMove;
+
+        const newSquares = [...squares];
+        newSquares[start.i][start.j] = piece;
+        newSquares[end.i][end.j] = null;
+
+        // If the piece is a pawn and it was its first move, reset the firstMove property
+        if (piece.type === 'pawn' && piece.firstMove === false) {
+            piece.firstMove = true;
+        }
+
+        // The piece is a king and the move is a castle move
+        if (piece.type === 'king' && Math.abs(start.j - end.j) === 2) {
+            if (end.j > start.j) {
+                // King side castling
+                const rook = newSquares[start.i][5];
+                newSquares[start.i][5] = null;
+                newSquares[start.i][7] = rook;
+            } else {
+                // Queen side castling
+                const rook = newSquares[start.i][3];
+                newSquares[start.i][3] = null;
+                newSquares[start.i][0] = rook;
+            }
+        }
+
+        // If a piece was captured, put it back
+        if (lastMove.capturedPiece) {
+            newSquares[end.i][end.j] = lastMove.capturedPiece;
+        }
+
+        setSquares(newSquares);
+        setMoves(newMoves);
+        setTurn(turn === 'light' ? 'dark' : 'light');
+    }
+
+
     return {
         squares,
         selectedPiece,
         possibleMoves,
         turn,
+        goBackAMove,
         resetGame,
         handleSquareClick,
         moves
